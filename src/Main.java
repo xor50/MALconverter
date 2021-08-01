@@ -30,6 +30,8 @@ public class Main {
 
 		System.out.println(calcALUValue(malPartsSplitSemicolon[0]));
 
+		System.out.println(calcBBusValue(malPartsSplitSemicolon[0]));
+
 //		int [] microinstruction = new int[36];
 		long microinstructionDec = 0; // just start adding values for the bits as 2^n
 
@@ -49,7 +51,24 @@ public class Main {
 	}
 
 	public static long calcBBusValue(String s) {
-		s.contains("MBR"); //todo
+		if (s.contains("MDR"))
+			return 0;
+		if (s.contains("PC"))
+			return 1;
+		if (s.contains("MBR"))
+			return 2;
+		if (s.contains("MBRU"))
+			return 3;
+		if (s.contains("SP"))
+			return 4;
+		if (s.contains("LV"))
+			return 5;
+		if (s.contains("CPP"))
+			return 6;
+		if (s.contains("TOS"))
+			return 7;
+		if (s.contains("OPC"))
+			return 8;
 		return 0;
 	}
 
