@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
@@ -16,7 +15,7 @@ public class Main {
 		doMainLoop();
 	}
 
-	public static void doMainLoop(){
+	public static void doMainLoop() {
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("please enter your MAL string; leave with 'exit':");
 		while (scanner.hasNext()) {
@@ -30,7 +29,7 @@ public class Main {
 		scanner.close();
 	}
 
-	public static void doMainCalc(String malFromUser){
+	public static void doMainCalc(String malFromUser) {
 		long microinstructionDec = 0; // just start adding values for the bits as 2^n
 
 		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
@@ -68,7 +67,7 @@ public class Main {
 		return Long.toBinaryString(decLong);
 	}
 
-	public static void printResults(long result){
+	public static void printResults(long result) {
 		String binaryString = decToBin(result);
 		System.out.println("in bin: " + binaryString);
 		System.out.println("in hex: " + binToHex(binaryString));
