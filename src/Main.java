@@ -9,6 +9,7 @@ public class Main {
 //		String testMalCode =  "PC = PC + 1; goto 00d";
 //		String testMalCode =  "H = PC; goto 00e";
 //		String testMalCode =  "OPC = TOS = PC + H; goto 00c";
+//		String testMalCode =  "H = MBRU << 8; goto Main1";
 //		System.out.println("test input: " + testMalCode);
 //		doMainCalc(testMalCode);
 
@@ -104,6 +105,8 @@ public class Main {
 		final long ENA = (long) Math.pow(2, 19);
 		final long F1 = (long) Math.pow(2, 20);
 		final long F0 = (long) Math.pow(2, 21);
+		final long SRA1 = (long) Math.pow(2, 22);
+		final long SLL8 = (long) Math.pow(2, 23);
 
 		//A
 		if (s.matches("H"))
@@ -147,6 +150,13 @@ public class Main {
 		//-1
 		if (s.matches("(-|−)1"))
 			return F0 + F1 + INVA;
+
+		//left shift
+		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)<<8"))
+			return SLL8;
+		//right shift
+		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)>>1"))
+			return SRA1;
 
 		System.out.println("error in calculation ALU value");
 		return 0;

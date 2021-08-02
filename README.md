@@ -9,7 +9,7 @@ This is a small program to convert *Micro Assembly Language* lines to binary mic
 maybe a lot of tiny things, I don't know, but mainly
 
 * crashes if you don't enter correct MAL (or ``exit`` command)
-* doesn't work yet with conditional jumps and shifts
+* doesn't work yet with conditional jumps
 
 ### How to use:
 
