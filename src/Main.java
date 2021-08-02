@@ -1,27 +1,44 @@
 import java.util.Arrays;
-import java.util.Locale;
+import java.util.Scanner;
 
 public class Main {
 
 	public static void main(String[] args) {
 
-//		String malCode = "PC = PC + 1; fetch; goto (MBR)";
-		String malCode = "MDR = TOS = MDR + H; wr; goto Main1";
-//		String malCode =  "PC = PC + 1; goto 00d";
-//		String malCode =  "H = PC; goto 00e";
-//		String malCode =  "OPC = TOS = PC + H; goto 00c";
-		System.out.println("input: " + malCode);
+//		String testMalCode = "PC = PC + 1; fetch; goto (MBR)"; //todo
+//		String testMalCode = "MDR = TOS = MDR + H; wr; goto Main1";
+//		String testMalCode =  "PC = PC + 1; goto 00d";
+//		String testMalCode =  "H = PC; goto 00e";
+//		String testMalCode =  "OPC = TOS = PC + H; goto 00c";
+//		System.out.println("test input: " + testMalCode);
+//		doMainCalc(testMalCode);
 
+		doMainLoop();
+	}
+
+	public static void doMainLoop(){
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("please enter your MAL string; leave with 'exit':");
+		while (scanner.hasNext()) {
+			String userInput = scanner.nextLine();
+			if (userInput.equals("exit"))
+				System.exit(0);
+			String malFromUser = userInput;
+			doMainCalc(malFromUser);
+			System.out.println("enter MAL or 'exit':");
+		}
+		scanner.close();
+	}
+
+	public static void doMainCalc(String malFromUser){
 		long microinstructionDec = 0; // just start adding values for the bits as 2^n
 
-		String malCodeNoSpaces = malCode.replaceAll("\\s+", "");
+		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
 
 		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
 
 		String[] malPartsSplitEquals = malCodeNoSpaces.split("=");
-//		System.out.println(Arrays.toString(malPartsSplitEquals));
 		String[] malPartsSplitSemicolon = malPartsSplitEquals[malPartsSplitEquals.length - 1].split(";");
-//		System.out.println(Arrays.toString(malPartsSplitSemicolon));
 
 		microinstructionDec += calcCBusValue(malPartsSplitEquals, numberOfCBusTargets);
 
@@ -35,14 +52,6 @@ public class Main {
 		microinstructionDec += calcALUValue(malPartsSplitSemicolon[0]);
 
 		microinstructionDec += calcBBusValue(malPartsSplitSemicolon[0]);
-
-//		int [] microinstruction = new int[36];
-
-
-//		System.out.println(hexToBin("100"));
-
-//		String binaryString = "1111";
-//		System.out.println(binToHex(binaryString));
 
 		printResults(microinstructionDec);
 	}
