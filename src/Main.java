@@ -7,49 +7,65 @@ public class Main {
 
 //		String malCode = "PC = PC + 1; fetch; goto (MBR)";
 		String malCode = "MDR = TOS = MDR + H; wr; goto Main1";
+//		String malCode =  "PC = PC + 1; goto 00d";
+//		String malCode =  "H = PC; goto 00e";
+//		String malCode =  "OPC = TOS = PC + H; goto 00c";
 		System.out.println("input: " + malCode);
 
-		String malCodeNoSpaces = malCode.replaceAll("\\s+", "");
-//		System.out.println(malCodeNoSpaces);
+		long microinstructionDec = 0; // just start adding values for the bits as 2^n
 
-		long numberOfCBusTargets = malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
+		String malCodeNoSpaces = malCode.replaceAll("\\s+", "");
+
+		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
 
 		String[] malPartsSplitEquals = malCodeNoSpaces.split("=");
 //		System.out.println(Arrays.toString(malPartsSplitEquals));
 		String[] malPartsSplitSemicolon = malPartsSplitEquals[malPartsSplitEquals.length - 1].split(";");
 //		System.out.println(Arrays.toString(malPartsSplitSemicolon));
 
-		System.out.println(calcCBusValue(malPartsSplitEquals, (int) (numberOfCBusTargets)));
+		microinstructionDec += calcCBusValue(malPartsSplitEquals, numberOfCBusTargets);
 
 		String malPartNextAddress = malPartsSplitSemicolon[malPartsSplitSemicolon.length - 1].substring(4); //take last array entry; remove goto (via substring)
-		System.out.println(calcNextAddress(malPartNextAddress));
+		microinstructionDec += calcNextAddress(malPartNextAddress);
 
 		if (malPartsSplitSemicolon.length == 3) {
-			System.out.println(calcMemActions(malPartsSplitSemicolon[malPartsSplitSemicolon.length - 2]));
+			microinstructionDec += calcMemActions(malPartsSplitSemicolon[malPartsSplitSemicolon.length - 2]);
 		}
 
-		System.out.println(calcALUValue(malPartsSplitSemicolon[0]));
+		microinstructionDec += calcALUValue(malPartsSplitSemicolon[0]);
 
-		System.out.println(calcBBusValue(malPartsSplitSemicolon[0]));
+		microinstructionDec += calcBBusValue(malPartsSplitSemicolon[0]);
 
 //		int [] microinstruction = new int[36];
-		long microinstructionDec = 0; // just start adding values for the bits as 2^n
 
 
 //		System.out.println(hexToBin("100"));
 
 //		String binaryString = "1111";
 //		System.out.println(binToHex(binaryString));
+
+		printResults(microinstructionDec);
 	}
 
 	public static String binToHex(String binaryString) {
-		return Integer.toHexString(Integer.parseInt(binaryString, 2));
+		return Long.toHexString(Long.parseLong(binaryString, 2));
 	}
 
 	public static String hexToBin(String hexString) {
 		return Integer.toBinaryString(Integer.parseInt(hexString, 16));
 	}
 
+	public static String decToBin(Long decLong) {
+		return Long.toBinaryString(decLong);
+	}
+
+	public static void printResults(long result){
+		String binaryString = decToBin(result);
+		System.out.println("in bin: " + binaryString);
+		System.out.println("in hex: " + binToHex(binaryString));
+	}
+
+	//only one B bus possible: direct return
 	public static long calcBBusValue(String s) {
 		if (s.contains("MDR"))
 			return 0;
@@ -73,8 +89,6 @@ public class Main {
 	}
 
 	public static long calcALUValue(String s) {
-
-		System.out.println(s);
 
 		final long INC = (long) Math.pow(2, 16);
 		final long INVA = (long) Math.pow(2, 17);
