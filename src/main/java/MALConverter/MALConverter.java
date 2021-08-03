@@ -11,15 +11,51 @@ public class MALConverter {
 	public static void main(String[] args) {
 
 //		String testMalCode = "PC = PC + 1; fetch; goto (MBR)"; //todo
-//		String testMalCode = "MDR = TOS = MDR + H; wr; goto Main1";
-//		String testMalCode = "PC = PC + 1; goto 00d";
-//		String testMalCode = "H = PC; goto 00e";
-//		String testMalCode = "OPC = TOS = PC + H; goto 00c";
 //		String testMalCode = "H = MBRU << 8; goto Main1";
 //		System.out.println("test input: " + testMalCode);
 //		doMainCalc(testMalCode);
 
 		doMainLoop();
+	}
+
+	public static void doMainLoop() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("please enter your MAL line; leave with 'exit':");
+		while (scanner.hasNext()) {
+			String userInput = scanner.nextLine();
+			if (userInput.equals("exit"))
+				System.exit(0);
+			if (userInput.contains(";") && userInput.contains("goto") && userInput.contains("=")) {
+				printResults(doMainCalc(userInput));
+				System.out.println("enter MAL line or 'exit':");
+			} else {
+				System.err.println("Please enter legal MAL line...");
+				System.exit(-69);
+			}
+		}
+		scanner.close();
+	}
+
+	public static long doMainCalc(String malFromUser) {
+
+		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
+
+		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
+		microinstructionInDecimal += calcCBusValue(findCparts(malCodeNoSpaces));
+		microinstructionInDecimal += calcALUValue(findBALUPart(malCodeNoSpaces));
+		microinstructionInDecimal += calcBBusValue(findBALUPart(malCodeNoSpaces));
+		if (!(findMemParts(malCodeNoSpaces) == null)) {
+			microinstructionInDecimal += calcMemActions(findMemParts(malCodeNoSpaces)[0]);
+		}
+		microinstructionInDecimal += calcNextAddress(findAddressPart(malCodeNoSpaces));
+
+		return microinstructionInDecimal;
+	}
+
+	public static void printResults(long result) {
+		String binaryString = decToBin(result);
+		System.out.println("in bin: " + binaryString);
+		System.out.println("in hex: " + binToHex(binaryString));
 	}
 
 	public static String[] findCparts(String s) {
@@ -67,40 +103,6 @@ public class MALConverter {
 		return s.substring(4);
 	}
 
-	public static void doMainLoop() {
-		Scanner scanner = new Scanner(System.in);
-		System.out.println("please enter your MAL line; leave with 'exit':");
-		while (scanner.hasNext()) {
-			String userInput = scanner.nextLine();
-			if (userInput.equals("exit"))
-				System.exit(0);
-			if (userInput.contains(";") && userInput.contains("goto") && userInput.contains("=")) {
-				printResults(doMainCalc(userInput));
-				System.out.println("enter MAL line or 'exit':");
-			} else {
-				System.err.println("Please enter legal MAL line...");
-				System.exit(-69);
-			}
-		}
-		scanner.close();
-	}
-
-	public static long doMainCalc(String malFromUser) {
-
-		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
-
-		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
-		microinstructionInDecimal += calcCBusValue(findCparts(malCodeNoSpaces));
-		microinstructionInDecimal += calcALUValue(findBALUPart(malCodeNoSpaces));
-		microinstructionInDecimal += calcBBusValue(findBALUPart(malCodeNoSpaces));
-		if (!(findMemParts(malCodeNoSpaces) == null)) {
-			microinstructionInDecimal += calcMemActions(findMemParts(malCodeNoSpaces)[0]);
-		}
-		microinstructionInDecimal += calcNextAddress(findAddressPart(malCodeNoSpaces));
-
-		return microinstructionInDecimal;
-	}
-
 	public static String binToHex(String binaryString) {
 		return Long.toHexString(Long.parseLong(binaryString, 2));
 	}
@@ -115,12 +117,6 @@ public class MALConverter {
 
 	public static String decToBin(Long decLong) {
 		return Long.toBinaryString(decLong);
-	}
-
-	public static void printResults(long result) {
-		String binaryString = decToBin(result);
-		System.out.println("in bin: " + binaryString);
-		System.out.println("in hex: " + binToHex(binaryString));
 	}
 
 	//from B bus only one value possible -> direct return
@@ -226,7 +222,7 @@ public class MALConverter {
 			hexAddress = "100"; //Main1 is at 0x100
 		else hexAddress = addressPart;
 
-		String binaryString = hexToBin(hexAddress).concat("000000000000000000000000000"); //NEXT_ADDRESS is the beginning of the microinstruction
+		String binaryString = hexToBin(hexAddress).concat("000000000000000000000000000"); //NEXT_ADDRESS is at the beginning of the microinstruction
 		return Long.parseLong(binaryString, 2);
 	}
 
