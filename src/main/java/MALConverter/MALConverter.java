@@ -1,4 +1,10 @@
+package MALConverter;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+
+import static MALConverter.BitValues.*;
 
 public class MALConverter {
 
@@ -16,6 +22,51 @@ public class MALConverter {
 		doMainLoop();
 	}
 
+	public static String[] findCparts(String s) {
+		List<String> list = new ArrayList<>();
+		while (s.contains("=")) {
+			list.add(s.substring(0, s.indexOf("=")));
+			s = s.substring(s.indexOf("=") + 1);
+		}
+		list.add(s);
+		list.remove(list.size() - 1); //remove last entry, which is part after last '=' -> not C part
+		return list.toArray(new String[0]);
+	}
+
+	public static String findBALUPart(String s) {
+		while (s.contains("=")) {
+			s = s.substring(s.indexOf("=") + 1);
+		}
+		return s.substring(0, s.indexOf(";"));
+	}
+
+	public static String[] findMemParts(String s) {
+		List<String> list = new ArrayList<>();
+		while (s.contains("=")) {
+			s = s.substring(s.indexOf("=") + 1);
+		}
+		while (s.contains(";")) {
+			list.add(s.substring(0, s.indexOf(";")));
+			s = s.substring(s.indexOf(";") + 1);
+		}
+		list.add(s);
+		list.remove(0); //remove first entry, which is part before first semicolon -> BALU
+		list.remove(list.size() - 1); //remove last entry, which is part after last semicolon -> address part
+		if (list.isEmpty())
+			return null;
+		return list.toArray(new String[0]);
+	}
+
+	public static String findAddressPart(String s) {
+		while (s.contains("=")) {
+			s = s.substring(s.indexOf("=") + 1);
+		}
+		while (s.contains(";")) {
+			s = s.substring(s.indexOf(";") + 1);
+		}
+		return s.substring(4);
+	}
+
 	public static void doMainLoop() {
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("please enter your MAL line; leave with 'exit':");
@@ -23,34 +74,29 @@ public class MALConverter {
 			String userInput = scanner.nextLine();
 			if (userInput.equals("exit"))
 				System.exit(0);
-			String malFromUser = userInput;
-			printResults(doMainCalc(malFromUser));
-			System.out.println("enter MAL line or 'exit':");
+			if (userInput.contains(";") && userInput.contains("goto") && userInput.contains("=")) {
+				printResults(doMainCalc(userInput));
+				System.out.println("enter MAL line or 'exit':");
+			} else {
+				System.err.println("Please enter legal MAL line...");
+				System.exit(-69);
+			}
 		}
 		scanner.close();
 	}
 
 	public static long doMainCalc(String malFromUser) {
+
 		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
-		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
-//		int numberOfSemicolons = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals(';')).count();
 
 		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
-
-		String[] malPartsSplitAtEqualSigns = malCodeNoSpaces.split("=");
-		microinstructionInDecimal += calcCBusValue(malPartsSplitAtEqualSigns, numberOfCBusTargets);
-
-		String[] malPartsSplitAtSemicolons = malPartsSplitAtEqualSigns[malPartsSplitAtEqualSigns.length - 1].split(";");
-		String malPartNextAddress = malPartsSplitAtSemicolons[malPartsSplitAtSemicolons.length - 1].substring(4); //take last array entry; remove goto (via substring)
-		microinstructionInDecimal += calcNextAddress(malPartNextAddress);
-
-		if (malPartsSplitAtSemicolons.length == 3) {
-			microinstructionInDecimal += calcMemActions(malPartsSplitAtSemicolons[malPartsSplitAtSemicolons.length - 2]);
+		microinstructionInDecimal += calcCBusValue(findCparts(malCodeNoSpaces));
+		microinstructionInDecimal += calcALUValue(findBALUPart(malCodeNoSpaces));
+		microinstructionInDecimal += calcBBusValue(findBALUPart(malCodeNoSpaces));
+		if (!(findMemParts(malCodeNoSpaces) == null)) {
+			microinstructionInDecimal += calcMemActions(findMemParts(malCodeNoSpaces)[0]);
 		}
-
-		microinstructionInDecimal += calcALUValue(malPartsSplitAtSemicolons[0]);
-
-		microinstructionInDecimal += calcBBusValue(malPartsSplitAtSemicolons[0]);
+		microinstructionInDecimal += calcNextAddress(findAddressPart(malCodeNoSpaces));
 
 		return microinstructionInDecimal;
 	}
@@ -103,64 +149,55 @@ public class MALConverter {
 	//directly match ALU input -> direct return
 	public static long calcALUValue(String s) {
 
-		final long INC = (long) Math.pow(2, 16);
-		final long INVA = (long) Math.pow(2, 17);
-		final long ENB = (long) Math.pow(2, 18);
-		final long ENA = (long) Math.pow(2, 19);
-		final long F1 = (long) Math.pow(2, 20);
-		final long F0 = (long) Math.pow(2, 21);
-		final long SRA1 = (long) Math.pow(2, 22);
-		final long SLL8 = (long) Math.pow(2, 23);
-
 		//A
 		if (s.matches("H"))
-			return F1 + ENA;
+			return F1.value + ENA.value;
 		//B
 		if (s.matches("MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC"))
-			return F1 + ENB;
+			return F1.value + ENB.value;
 		//B + A
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)\\+H"))
-			return F0 + F1 + ENA + ENB;
+			return F0.value + F1.value + ENA.value + ENB.value;
 		//B + A + 1
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)\\+H\\+1"))
-			return F0 + F1 + ENA + ENB + INC;
+			return F0.value + F1.value + ENA.value + ENB.value + INC.value;
 		//A + 1
 		if (s.matches("H\\+1"))
-			return F0 + F1 + ENA + INC;
+			return F0.value + F1.value + ENA.value + INC.value;
 		//B + 1
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)\\+1"))
-			return F0 + F1 + ENB + INC;
+			return F0.value + F1.value + ENB.value + INC.value;
 		//B - 1
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)(-|−)1"))
-			return F0 + F1 + ENB + INVA;
+			return F0.value + F1.value + ENB.value + INVA.value;
 		//B - A
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)(-|−)H"))
-			return F0 + F1 + ENA + ENB + INVA + INC;
+			return F0.value + F1.value + ENA.value + ENB.value + INVA.value + INC.value;
 		//-A
 		if (s.matches("(-|−)H"))
-			return F0 + F1 + ENA + INVA + INC;
+			return F0.value + F1.value + ENA.value + INVA.value + INC.value;
 		//B AND A
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)ANDH"))
-			return ENA + ENB;
+			return ENA.value + ENB.value;
 		//B OR A
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)ORH"))
-			return F1 + ENA + ENB;
+			return F1.value + ENA.value + ENB.value;
 		//0
 		if (s.matches("0"))
-			return F1;
+			return F1.value;
 		//1
 		if (s.matches("1"))
-			return F0 + F1 + INC;
+			return F0.value + F1.value + INC.value;
 		//-1
 		if (s.matches("(-|−)1"))
-			return F0 + F1 + INVA;
+			return F0.value + F1.value + INVA.value;
 
 		//left shift
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)<<8"))
-			return SLL8;
+			return SLL8.value;
 		//right shift
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)>>1"))
-			return SRA1;
+			return SRA1.value;
 
 		System.err.println("error in calculation ALU value");
 		return 0;
@@ -193,20 +230,20 @@ public class MALConverter {
 		return Long.parseLong(binaryString, 2);
 	}
 
-	//todo: fetch is possible at the same time as rd, wr (?)
+	//todo: fetch is possible at the same time as rd, wr (?); probably do like CBus calc
 	public static long calcMemActions(String memPart) {
 		long returnValue = 0;
 		switch (memPart) {
 			case "fetch":
-				returnValue += Math.pow(2, 4);
+				returnValue += FETCH.value;
 				break;
 			case "rd":
 			case "read":
-				returnValue += Math.pow(2, 5);
+				returnValue += READ.value;
 				break;
 			case "wr":
 			case "write":
-				returnValue += Math.pow(2, 6);
+				returnValue += WRITE.value;
 				break;
 			default:
 				returnValue += 0;
@@ -215,36 +252,36 @@ public class MALConverter {
 	}
 
 	//multiple C bus outputs possible, loop and add, then return
-	public static long calcCBusValue(String[] parts, int stopAt) {
+	public static long calcCBusValue(String[] parts) {
 		long returnValue = 0;
-		for (int i = 0; i < stopAt; i++) {
-			switch (parts[i]) {
+		for (String part : parts) {
+			switch (part) {
 				case "H":
-					returnValue += Math.pow(2, 15);
+					returnValue += H.value;
 					break;
 				case "OPC":
-					returnValue += Math.pow(2, 14);
+					returnValue += OPC.value;
 					break;
 				case "TOS":
-					returnValue += Math.pow(2, 13);
+					returnValue += TOS.value;
 					break;
 				case "CPP":
-					returnValue += Math.pow(2, 12);
+					returnValue += CPP.value;
 					break;
 				case "LV":
-					returnValue += Math.pow(2, 11);
+					returnValue += LV.value;
 					break;
 				case "SP":
-					returnValue += Math.pow(2, 10);
+					returnValue += SP.value;
 					break;
 				case "PC":
-					returnValue += Math.pow(2, 9);
+					returnValue += PC.value;
 					break;
 				case "MDR":
-					returnValue += Math.pow(2, 8);
+					returnValue += MDR.value;
 					break;
 				case "MAR":
-					returnValue += Math.pow(2, 7);
+					returnValue += MAR.value;
 					break;
 				default:
 					returnValue += 0;
