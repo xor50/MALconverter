@@ -1,6 +1,6 @@
 import java.util.Scanner;
 
-public class Main {
+public class MALConverter {
 
 	public static void main(String[] args) {
 
@@ -157,7 +157,7 @@ public class Main {
 		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)>>1"))
 			return SRA1;
 
-		System.out.println("error in calculation ALU value");
+		System.err.println("error in calculation ALU value");
 		return 0;
 	}
 
