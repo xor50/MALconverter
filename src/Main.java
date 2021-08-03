@@ -31,29 +31,27 @@ public class Main {
 	}
 
 	public static void doMainCalc(String malFromUser) {
-		long microinstructionDec = 0; // just start adding values for the bits as 2^n
-
 		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
-
 		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
 
-		String[] malPartsSplitEquals = malCodeNoSpaces.split("=");
-		String[] malPartsSplitSemicolon = malPartsSplitEquals[malPartsSplitEquals.length - 1].split(";");
+		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
 
-		microinstructionDec += calcCBusValue(malPartsSplitEquals, numberOfCBusTargets);
+		String[] malPartsSplitAtEqualSigns = malCodeNoSpaces.split("=");
+		microinstructionInDecimal += calcCBusValue(malPartsSplitAtEqualSigns, numberOfCBusTargets);
 
-		String malPartNextAddress = malPartsSplitSemicolon[malPartsSplitSemicolon.length - 1].substring(4); //take last array entry; remove goto (via substring)
-		microinstructionDec += calcNextAddress(malPartNextAddress);
+		String[] malPartsSplitAtSemicolons = malPartsSplitAtEqualSigns[malPartsSplitAtEqualSigns.length - 1].split(";");
+		String malPartNextAddress = malPartsSplitAtSemicolons[malPartsSplitAtSemicolons.length - 1].substring(4); //take last array entry; remove goto (via substring)
+		microinstructionInDecimal += calcNextAddress(malPartNextAddress);
 
-		if (malPartsSplitSemicolon.length == 3) {
-			microinstructionDec += calcMemActions(malPartsSplitSemicolon[malPartsSplitSemicolon.length - 2]);
+		if (malPartsSplitAtSemicolons.length == 3) {
+			microinstructionInDecimal += calcMemActions(malPartsSplitAtSemicolons[malPartsSplitAtSemicolons.length - 2]);
 		}
 
-		microinstructionDec += calcALUValue(malPartsSplitSemicolon[0]);
+		microinstructionInDecimal += calcALUValue(malPartsSplitAtSemicolons[0]);
 
-		microinstructionDec += calcBBusValue(malPartsSplitSemicolon[0]);
+		microinstructionInDecimal += calcBBusValue(malPartsSplitAtSemicolons[0]);
 
-		printResults(microinstructionDec);
+		printResults(microinstructionInDecimal);
 	}
 
 	public static String binToHex(String binaryString) {
@@ -74,7 +72,7 @@ public class Main {
 		System.out.println("in hex: " + binToHex(binaryString));
 	}
 
-	//only one B bus possible: direct return
+	//from B bus only one value possible -> direct return
 	public static long calcBBusValue(String s) {
 		if (s.contains("MDR"))
 			return 0;
@@ -97,6 +95,7 @@ public class Main {
 		return 0;
 	}
 
+	//directly match ALU input -> direct return
 	public static long calcALUValue(String s) {
 
 		final long INC = (long) Math.pow(2, 16);
@@ -163,16 +162,19 @@ public class Main {
 	}
 
 	public static long calcNextAddress(String addressPart) {
-		String hexString;
 
+		String hexAddress;
+
+		//input "Main1" is special case
 		if (addressPart.equalsIgnoreCase("main1"))
-			hexString = "100"; //Main1 is at 0x100
-		else hexString = addressPart;
+			hexAddress = "100"; //Main1 is at 0x100
+		else hexAddress = addressPart;
 
-		String binaryString = hexToBin(hexString).concat("000000000000000000000000000");
+		String binaryString = hexToBin(hexAddress).concat("000000000000000000000000000"); //NEXT_ADDRESS is the beginning of the microinstruction
 		return Long.parseLong(binaryString, 2);
 	}
 
+	//todo: fetch is possible at the same time as rd, wr (?)
 	public static long calcMemActions(String memPart) {
 		long returnValue = 0;
 		switch (memPart) {
@@ -193,6 +195,7 @@ public class Main {
 		return returnValue;
 	}
 
+	//multiple C bus outputs possible, loop and add, then return
 	public static long calcCBusValue(String[] parts, int stopAt) {
 		long returnValue = 0;
 		for (int i = 0; i < stopAt; i++) {
