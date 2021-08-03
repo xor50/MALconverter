@@ -6,10 +6,10 @@ public class MALConverter {
 
 //		String testMalCode = "PC = PC + 1; fetch; goto (MBR)"; //todo
 //		String testMalCode = "MDR = TOS = MDR + H; wr; goto Main1";
-//		String testMalCode =  "PC = PC + 1; goto 00d";
-//		String testMalCode =  "H = PC; goto 00e";
-//		String testMalCode =  "OPC = TOS = PC + H; goto 00c";
-//		String testMalCode =  "H = MBRU << 8; goto Main1";
+//		String testMalCode = "PC = PC + 1; goto 00d";
+//		String testMalCode = "H = PC; goto 00e";
+//		String testMalCode = "OPC = TOS = PC + H; goto 00c";
+//		String testMalCode = "H = MBRU << 8; goto Main1";
 //		System.out.println("test input: " + testMalCode);
 //		doMainCalc(testMalCode);
 
@@ -33,6 +33,7 @@ public class MALConverter {
 	public static long doMainCalc(String malFromUser) {
 		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
 		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
+//		int numberOfSemicolons = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals(';')).count();
 
 		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
 
@@ -165,10 +166,24 @@ public class MALConverter {
 		return 0;
 	}
 
+//	public static long calcJumpBits(String s) {
+//
+//		long returnValue = 0;
+//
+//		if (s.equalsIgnoreCase("MBR"))
+//			returnValue = (long) Math.pow(2, 26);
+//		//todo:
+//		else returnValue = 0;
+//		return 0;
+//	}
+
 	public static long calcNextAddress(String addressPart) {
 
 		String hexAddress;
 
+		//todo:
+//		if (addressPart.equalsIgnoreCase("(MBR)"))
+//			calcJumpBits("MBR");
 		//input "Main1" is special case
 		if (addressPart.equalsIgnoreCase("main1"))
 			hexAddress = "100"; //Main1 is at 0x100
