@@ -18,19 +18,19 @@ public class MALConverter {
 
 	public static void doMainLoop() {
 		Scanner scanner = new Scanner(System.in);
-		System.out.println("please enter your MAL string; leave with 'exit':");
+		System.out.println("please enter your MAL line; leave with 'exit':");
 		while (scanner.hasNext()) {
 			String userInput = scanner.nextLine();
 			if (userInput.equals("exit"))
 				System.exit(0);
 			String malFromUser = userInput;
-			doMainCalc(malFromUser);
-			System.out.println("enter MAL or 'exit':");
+			printResults(doMainCalc(malFromUser));
+			System.out.println("enter MAL line or 'exit':");
 		}
 		scanner.close();
 	}
 
-	public static void doMainCalc(String malFromUser) {
+	public static long doMainCalc(String malFromUser) {
 		String malCodeNoSpaces = malFromUser.replaceAll("\\s+", "");
 		int numberOfCBusTargets = (int) malCodeNoSpaces.chars().mapToObj(c -> (char) c).filter(x -> x.equals('=')).count();
 
@@ -51,11 +51,15 @@ public class MALConverter {
 
 		microinstructionInDecimal += calcBBusValue(malPartsSplitAtSemicolons[0]);
 
-		printResults(microinstructionInDecimal);
+		return microinstructionInDecimal;
 	}
 
 	public static String binToHex(String binaryString) {
 		return Long.toHexString(Long.parseLong(binaryString, 2));
+	}
+
+	public static Long binToDec(String binaryString) {
+		return Long.parseLong(binaryString, 2);
 	}
 
 	public static String hexToBin(String hexString) {
