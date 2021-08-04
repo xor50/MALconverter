@@ -8,16 +8,15 @@ by [Andrew S. Tanenbaum](https://en.wikipedia.org/wiki/Andrew_S._Tanenbaum).
 
 ### Known issues:
 
-maybe a lot of tiny things, I don't know, but mainly
+maybe some tiny things, but mainly
 
 * possible crashes if you don't enter correct MAL (or ``exit`` command)
-* doesn't work yet with conditional jumps
 
 ### How to use:
 
 1) Start and use via command line.
 
-2) Just enter correct MAL like ``MDR = TOS = MDR + H; wr; goto Main1``. Don't forget or leave out ``NEXT_ADDRESS`` (in
-   hex or ``Main1``).
+2) Just enter correct MAL like ``MDR = TOS = MDR + H; wr; goto Main1``. Don't forget or leave out ``NEXT_ADDRESS`` (
+   hex, ``Main1``, or ``MBR``).
 
 3) When you're done leave with ``exit``.

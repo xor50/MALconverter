@@ -9,12 +9,6 @@ import static MALConverter.BitValues.*;
 public class MALConverter {
 
 	public static void main(String[] args) {
-
-//		String testMalCode = "PC = PC + 1; fetch; goto (MBR)"; //todo
-//		String testMalCode = "H = MBRU << 8; goto Main1";
-//		System.out.println("test input: " + testMalCode);
-//		doMainCalc(testMalCode);
-
 		doMainLoop();
 	}
 
@@ -42,10 +36,10 @@ public class MALConverter {
 
 		long microinstructionInDecimal = 0; // just start adding values for the bits as 2^n
 		microinstructionInDecimal += calcCBusValue(findCparts(malCodeNoSpaces));
-		microinstructionInDecimal += calcALUValue(findBALUPart(malCodeNoSpaces));
-		microinstructionInDecimal += calcBBusValue(findBALUPart(malCodeNoSpaces));
+		microinstructionInDecimal += calcBALUValue(findBALUPart(malCodeNoSpaces));
 		if (!(findMemParts(malCodeNoSpaces) == null)) {
 			microinstructionInDecimal += calcMemActions(findMemParts(malCodeNoSpaces)[0]);
+			microinstructionInDecimal += calcJumpBits(findMemParts(malCodeNoSpaces)[0]);
 		}
 		microinstructionInDecimal += calcNextAddress(findAddressPart(malCodeNoSpaces));
 
@@ -100,7 +94,9 @@ public class MALConverter {
 		while (s.contains(";")) {
 			s = s.substring(s.indexOf(";") + 1);
 		}
-		return s.substring(4);
+		if (s.contains("else"))
+			return s.substring(8);
+		else return s.substring(4);
 	}
 
 	public static String binToHex(String binaryString) {
@@ -119,16 +115,22 @@ public class MALConverter {
 		return Long.toBinaryString(decLong);
 	}
 
+	public static long calcBALUValue(String s) {
+		return calcBBusValue(s) + calcALUValue(s);
+	}
+
 	//from B bus only one value possible -> direct return
 	public static long calcBBusValue(String s) {
 		if (s.contains("MDR"))
 			return 0;
-		if (s.contains("PC"))
-			return 1;
-		if (s.contains("MBR"))
-			return 2;
-		if (s.contains("MBRU"))
-			return 3;
+		if (s.contains("PC")) { //note: OPC 'contains' PC
+			if (s.contains("OPC")) return 8;
+			else return 1;
+		}
+		if (s.contains("MBR")) { //note: MBRU 'contains' MBR
+			if (s.contains("MBRU")) return 3;
+			else return 2;
+		}
 		if (s.contains("SP"))
 			return 4;
 		if (s.contains("LV"))
@@ -137,13 +139,18 @@ public class MALConverter {
 			return 6;
 		if (s.contains("TOS"))
 			return 7;
-		if (s.contains("OPC"))
-			return 8;
 		return 0;
 	}
 
 	//directly match ALU input -> direct return
 	public static long calcALUValue(String s) {
+
+		//left shift B
+		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)<<8"))
+			return SLL8.value + F1.value + ENB.value;
+		//right shift B
+		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC)>>1"))
+			return SRA1.value + F1.value + ENB.value;
 
 		//A
 		if (s.matches("H"))
@@ -188,35 +195,28 @@ public class MALConverter {
 		if (s.matches("(-|−)1"))
 			return F0.value + F1.value + INVA.value;
 
-		//left shift
-		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)<<8"))
-			return SLL8.value;
-		//right shift
-		if (s.matches("(MDR|PC|MBR|MBRU|SP|LV|CPP|TOS|OPC|H)>>1"))
-			return SRA1.value;
-
 		System.err.println("error in calculation ALU value");
 		return 0;
 	}
 
-//	public static long calcJumpBits(String s) {
-//
-//		long returnValue = 0;
-//
-//		if (s.equalsIgnoreCase("MBR"))
-//			returnValue = (long) Math.pow(2, 26);
-//		//todo:
-//		else returnValue = 0;
-//		return 0;
-//	}
+	public static long calcJumpBits(String s) {
+
+		if (s.equals("MBR"))
+			return JMPC.value;
+		else if (s.contains("if") && s.contains("N"))
+			return JAMN.value;
+		else if (s.contains("if") && s.contains("Z"))
+			return JAMZ.value;
+		else return 0;
+	}
 
 	public static long calcNextAddress(String addressPart) {
 
 		String hexAddress;
 
-		//todo:
-//		if (addressPart.equalsIgnoreCase("(MBR)"))
-//			calcJumpBits("MBR");
+		//input "MBR" is special case
+		if (addressPart.contains("MBR"))
+			return calcJumpBits("MBR"); //if MBR means NEXT_ADDRESS doesn't matter; set jump bit instead
 		//input "Main1" is special case
 		if (addressPart.equalsIgnoreCase("main1"))
 			hexAddress = "100"; //Main1 is at 0x100
